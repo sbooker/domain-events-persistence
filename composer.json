@@ -1,0 +1,41 @@
+{
+  "name": "sbooker/domain-events-persistence",
+  "description": "Domain events storage",
+  "type": "library",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Sergey Knigin",
+      "email": "sergey.knigin.dev@gmail.com"
+    }
+  ],
+  "require": {
+    "php": "^7.4 || ^8.0",
+    "psr/log": "^1.0",
+    "sbooker/domain-events": "^1.0",
+    "sbooker/transaction-manager": "^1.0",
+    "sbooker/persistent-pointer": "^1.0",
+    "symfony/serializer": "^5.0"
+  },
+  "require-dev": {
+    "gamez/ramsey-uuid-normalizer": "^2.0",
+    "phpunit/phpunit": "^9.0",
+    "symfony/property-access": "^5.0",
+    "symfony/property-info": "^5.0"
+  },
+  "suggest": {
+    "gamez/ramsey-uuid-normalizer": "^2.0",
+    "symfony/property-access": "^5.0",
+    "symfony/property-info": "^5.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "Sbooker\\DomainEvents\\Persistence\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Test\\Sbooker\\DomainEvents\\Persistence\\": "tests/"
+    }
+  }
+}
