@@ -21,7 +21,8 @@
     "gamez/ramsey-uuid-normalizer": "^2.0",
     "phpunit/phpunit": "^9.0",
     "symfony/property-access": "^5.0",
-    "symfony/property-info": "^5.0"
+    "symfony/property-info": "^5.0",
+    "vimeo/psalm": "^4.7"
   },
   "suggest": {
     "gamez/ramsey-uuid-normalizer": "^2.0",

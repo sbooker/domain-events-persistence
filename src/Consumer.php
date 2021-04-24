@@ -77,6 +77,10 @@ final class Consumer
 
                 $this->handleEvent($domainEvent);
 
+                if (null === $event->getPosition()) {
+                    throw new \RuntimeException('Event must have position to consume');
+                }
+
                 $position->increaseTo($event->getPosition());
 
                 return true;

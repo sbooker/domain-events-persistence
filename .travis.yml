@@ -15,4 +15,5 @@ install:
     - composer install
 
 script:
+    - ./vendor/bin/psalm --show-info=true
     - ./vendor/bin/phpunit
