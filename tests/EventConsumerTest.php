@@ -41,7 +41,7 @@ class EventConsumerTest extends TestCase
                 ],
                 $actorPayloadPart
             );
-        $persistentEvent = new PersistentEvent(Uuid::uuid4(), TestDomainEvent::class, $occurredAt, $payload, 1);
+        $persistentEvent = new PersistentEvent(Uuid::uuid4(), TestDomainEvent::class, $occurredAt, Uuid::uuid4(), $payload, 1);
         $consumer = new Consumer(
             $this->getEventStorage($persistentEvent),
             $this->getTransactionManager(),

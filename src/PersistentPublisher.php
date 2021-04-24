@@ -16,11 +16,14 @@ final class PersistentPublisher implements Publisher
 
     private NormalizerInterface $normalizer;
 
-    public function __construct(EventStorage $storage, EventNameGiver $nameGiver, NormalizerInterface $normalizer)
+    private ?PositionGenerator $positionGenerator;
+
+    public function __construct(EventStorage $storage, EventNameGiver $nameGiver, NormalizerInterface $normalizer, ?PositionGenerator $positionGenerator = null)
     {
         $this->storage = $storage;
         $this->nameGiver = $nameGiver;
         $this->normalizer = $normalizer;
+        $this->positionGenerator = $positionGenerator;
     }
 
     /**
@@ -28,6 +31,8 @@ final class PersistentPublisher implements Publisher
      */
     public function publish(DomainEvent $event): void
     {
-        $this->storage->add(PersistentEvent::create($event, $this->nameGiver, $this->normalizer));
+        $position = null !== $this->positionGenerator ? $this->positionGenerator->next() : null;
+
+        $this->storage->add(PersistentEvent::create($event, $this->nameGiver, $this->normalizer, $position));
     }
 }

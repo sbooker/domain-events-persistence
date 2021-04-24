@@ -21,13 +21,15 @@ final class PersistentEventTest extends TestCase
         $id = Uuid::uuid4();
         $name = "event.name";
         $at = new \DateTimeImmutable();
+        $entityId = Uuid::uuid4();
         $payload = [ "a" => "A", "b" => "Ba" ];
 
-        $event = new PersistentEvent($id, $name, $at, $payload);
+        $event = new PersistentEvent($id, $name, $at, $entityId, $payload);
 
         $this->assertEquals($id, $event->getId());
         $this->assertEquals($name, $event->getName());
         $this->assertEquals($at, $event->getOccurredAt());
+        $this->assertEquals($entityId, $event->getEntityId());
         $this->assertEquals($payload, $event->getPayload());
         $this->assertNull($event->getPosition());
     }
