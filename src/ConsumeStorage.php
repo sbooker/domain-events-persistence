@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace Sbooker\DomainEvents\Persistence;
 
-interface EventStorage
+interface ConsumeStorage
 {
-    public function add(PersistentEvent $event): void;
-
     /**
      * @param string[] $eventNames
      * @param int $position

@@ -13,7 +13,7 @@ use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 
 final class Consumer
 {
-    private EventStorage $eventStorage;
+    private ConsumeStorage $eventStorage;
 
     private TransactionManager $transactionManager;
 
@@ -30,7 +30,7 @@ final class Consumer
     private ?LoggerInterface $logger;
 
     public function __construct(
-        EventStorage $eventStorage,
+        ConsumeStorage $eventStorage,
         TransactionManager $transactionManager,
         DenormalizerInterface $denormalizer,
         PersistentPointer\Repository $positionStorage,

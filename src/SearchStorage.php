@@ -6,7 +6,7 @@ namespace Sbooker\DomainEvents\Persistence;
 
 use Ramsey\Uuid\UuidInterface;
 
-interface EventReadStorage
+interface SearchStorage
 {
     /**
      * @return array<PersistentEvent>

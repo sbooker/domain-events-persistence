@@ -12,7 +12,7 @@ use Sbooker\DomainEvents\DomainEvent;
 use Sbooker\DomainEvents\DomainEventSubscriber;
 use Sbooker\DomainEvents\Persistence\ClassNameNameGiver;
 use Sbooker\DomainEvents\Persistence\Consumer;
-use Sbooker\DomainEvents\Persistence\EventStorage;
+use Sbooker\DomainEvents\Persistence\ConsumeStorage;
 use Sbooker\DomainEvents\Persistence\PersistentEvent;
 use Symfony\Component\PropertyInfo\Extractor\PhpDocExtractor;
 use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;
@@ -57,16 +57,14 @@ class EventConsumerTest extends TestCase
         $this->assertTrue($result);
     }
 
-    private function getEventStorage(PersistentEvent $event): EventStorage
+    private function getEventStorage(PersistentEvent $event): ConsumeStorage
     {
-        return new class ($event) implements EventStorage {
+        return new class ($event) implements ConsumeStorage {
             private PersistentEvent $event;
 
             public function __construct(PersistentEvent $event) {
                 $this->event = $event;
             }
-
-            public function add(PersistentEvent $event): void { }
 
             public function getFirstByPosition(array $eventNames, int $position): ?PersistentEvent
             {

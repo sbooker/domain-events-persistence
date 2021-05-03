@@ -8,7 +8,8 @@ use Sbooker\DomainEvents\DomainEvent;
 use Sbooker\DomainEvents\DomainEventSubscriber;
 use Sbooker\DomainEvents\Persistence\ClassNameNameGiver;
 use Sbooker\DomainEvents\Persistence\Consumer;
-use Sbooker\DomainEvents\Persistence\EventStorage;
+use Sbooker\DomainEvents\Persistence\ConsumeStorage;
+use Sbooker\DomainEvents\Persistence\WriteStorage;
 use Sbooker\DomainEvents\Persistence\PersistentEvent;
 use Symfony\Component\Serializer\Serializer;
 
@@ -31,11 +32,9 @@ final class NoEventConsumerTest extends TestCase
         $this->assertFalse($result);
     }
 
-    private function getEmptyEventStorage(): EventStorage
+    private function getEmptyEventStorage(): ConsumeStorage
     {
-        return new class implements EventStorage {
-            public function add(PersistentEvent $event): void { }
-
+        return new class implements ConsumeStorage {
             public function getFirstByPosition(array $eventNames, int $position): ?PersistentEvent
             {
                 return null;

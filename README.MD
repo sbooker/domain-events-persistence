@@ -4,6 +4,8 @@
 [![Software License][badge-license]][license]
 [![PHP Version][badge-php]][php]
 [![Total Downloads][badge-downloads]][downloads]
+[![Build Status](https://travis-ci.com/sbooker/domain-events-persistence.svg?branch=2.x)](https://travis-ci.org/sbooker/domain-events-persistence)
+[![codecov](https://codecov.io/gh/sbooker/domain-events-persistence/branch/2.x/graph/badge.svg?token=QB17YFKLPD)](https://codecov.io/gh/sbooker/domain-events-persistence)
 
 Persistence layer for [sbooker/domain-events](https://github.com/sbooker/domain-events)
 
@@ -15,18 +17,19 @@ composer require sbooker/domain-events-persistence
 
 ### Usage
 
-#### Publish event
 ```php
 <?php
 
+// # Publish events
+
 use Sbooker\DomainEvents\Persistence\ClassNameNameGiver;
-use Sbooker\DomainEvents\Persistence\EventStorage;
+use Sbooker\DomainEvents\Persistence\WriteStorage;
 use Sbooker\DomainEvents\Persistence\PersistentEvent;
 use Sbooker\DomainEvents\Persistence\PersistentPublisher;
-use Sbooker\DomainEvents\PublisherContainer;
+use Sbooker\DomainEvents\Persistence\ConsumeStorage;
 
-
-$eventStorage = new class implements EventStorage {
+$eventStorage = new class implements WriteStorage, ConsumeStorage 
+{
     public function add(PersistentEvent $event): void {
         // ...
     }
@@ -43,43 +46,52 @@ $publisher = new PersistentPublisher($eventStorage, $nameGiver, $normalizer);
 
 // ...
 
-PublisherContainer::instance()->setPublisher($publisher);
-
 use Sbooker\DomainEvents\DomainEvent;
-use Sbooker\DomainEvents\EventPublisherContainer;
+use Sbooker\DomainEvents\DomainEntity;
+use Sbooker\DomainEvents\DominEventCollector;
 
 class SomethingOccurred extends  DomainEvent {}
 
-class SomeAggregateRoot
+class Entity implements DomainEntity
 {
-    use EventPublisherContainer;
+    use DominEventCollector;
     
-    public function doSomethingOfDomainLogic()
+    public function doSomething()
     {
         // do
         $this->publish(new SomethingOccurred());
     }
 }
 
+$entity = new Entity();
+$entity->doSomething();
+
+// Persist events
+
+$entity->dispatchEvents($publisher);
+
 // Subscribe on events
 
 use Sbooker\DomainEvents\Persistence\Consumer;
+use Sbooker\DomainEvents\DomainEventSubscriber;
+use Sbooker\PersistentPointer\Repository as PersistentPointerRepository;
+use Sbooker\TransactionManager\TransactionManager;
+use Sbooker\TransactionManager\TransactionHandler;
+use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 
-$transactionManager = new \Sbooker\TransactionManager\TransactionManager(
-    new class implements \Sbooker\TransactionManager\TransactionHandler { /* ... */ };
+$transactionManager = new TransactionManager(
+    new class implements TransactionHandler { /* ... */ };
 ); 
 
-$denormalizer = new class implements \Symfony\Component\Serializer\Normalizer\DenormalizerInterface { /* ... */ };
-
-
+$denormalizer = new class implements DenormalizerInterface { /* ... */ };
 
 $consumer = new Consumer(
     $eventStorage,
     $transactionManager,
     $denormalizer,
-    new \Sbooker\PersistentPointer\Repository(/* ... */),
+    new PersistentPointerRepository(/* ... */),
     $nameGiver,
-    new class implements \Sbooker\DomainEvents\DomainEventSubscriber { /* ... */},
+    new class implements DomainEventSubscriber { /* ... */},
     'subscriber.name'
 );
 

@@ -18,14 +18,18 @@ final class MapNameGiver extends EventNameGiver
     {
         $reverseMap = array_flip($this->map);
 
-        assert(isset($reverseMap[$name]), 'Event name' . $name . 'mapping not supported');
+        if (!isset($reverseMap[$name])) {
+            throw new \RuntimeException('Event name' . $name . ' mapping not supported');
+        }
 
         return $reverseMap[$name];
     }
 
     public function getNameByClass(string $class): string
     {
-        assert(isset($this->map[$class]), 'Event class' . $class . 'mapping not supported');
+        if (!isset($this->map[$class])) {
+            throw new \RuntimeException('Event class' . $class . ' mapping not supported');
+        }
 
         return $this->map[$class];
     }
