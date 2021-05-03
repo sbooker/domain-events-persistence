@@ -10,7 +10,7 @@ use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
 final class PersistentPublisher implements Publisher
 {
-    private EventStorage $storage;
+    private WriteStorage $storage;
 
     private EventNameGiver $nameGiver;
 
@@ -18,7 +18,7 @@ final class PersistentPublisher implements Publisher
 
     private ?PositionGenerator $positionGenerator;
 
-    public function __construct(EventStorage $storage, EventNameGiver $nameGiver, NormalizerInterface $normalizer, ?PositionGenerator $positionGenerator = null)
+    public function __construct(WriteStorage $storage, EventNameGiver $nameGiver, NormalizerInterface $normalizer, ?PositionGenerator $positionGenerator = null)
     {
         $this->storage = $storage;
         $this->nameGiver = $nameGiver;
