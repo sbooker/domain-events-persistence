@@ -17,22 +17,19 @@ composer require sbooker/domain-events-persistence
 
 ### Usage
 
+#### Publish event
+See [sbooker/domain-events README](https://github.com/sbooker/domain-events/blob/master/README.MD) 
+
+#### Subscribe on events
+
 ```php
 <?php
 
-// # Publish events
-
 use Sbooker\DomainEvents\Persistence\ClassNameNameGiver;
-use Sbooker\DomainEvents\Persistence\WriteStorage;
 use Sbooker\DomainEvents\Persistence\PersistentEvent;
-use Sbooker\DomainEvents\Persistence\PersistentPublisher;
-use Sbooker\DomainEvents\Persistence\ConsumeStorage;
 
-$eventStorage = new class implements WriteStorage, ConsumeStorage 
-{
-    public function add(PersistentEvent $event): void {
-        // ...
-    }
+
+$eventStorage = new class implements \Sbooker\DomainEvents\Persistence\ConsumeStorage {
     public function getFirstByPosition(array $eventNames,int $position): ?PersistentEvent {
         // ...
     }
@@ -42,58 +39,63 @@ $nameGiver = new ClassNameNameGiver();
 
 $normalizer = new class implements \Symfony\Component\Serializer\Normalizer\NormalizerInterface { /* ... */ };
 
-$publisher = new PersistentPublisher($eventStorage, $nameGiver, $normalizer);
-
-// ...
-
-use Sbooker\DomainEvents\DomainEvent;
-use Sbooker\DomainEvents\DomainEntity;
-use Sbooker\DomainEvents\DominEventCollector;
-
-class SomethingOccurred extends  DomainEvent {}
-
-class Entity implements DomainEntity
-{
-    use DominEventCollector;
-    
-    public function doSomething()
-    {
-        // do
-        $this->publish(new SomethingOccurred());
-    }
-}
-
-$entity = new Entity();
-$entity->doSomething();
-
-// Persist events
-
-$entity->dispatchEvents($publisher);
-
-// Subscribe on events
-
 use Sbooker\DomainEvents\Persistence\Consumer;
-use Sbooker\DomainEvents\DomainEventSubscriber;
-use Sbooker\PersistentPointer\Repository as PersistentPointerRepository;
-use Sbooker\TransactionManager\TransactionManager;
-use Sbooker\TransactionManager\TransactionHandler;
-use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 
-$transactionManager = new TransactionManager(
-    new class implements TransactionHandler { /* ... */ };
+$transactionManager = new \Sbooker\TransactionManager\TransactionManager(
+    new class implements \Sbooker\TransactionManager\TransactionHandler { /* ... */ };
 ); 
 
-$denormalizer = new class implements DenormalizerInterface { /* ... */ };
+$denormalizer = new class implements \Symfony\Component\Serializer\Normalizer\DenormalizerInterface { /* ... */ };
+
+// Own custom event handler
+$eventHandler = new class implements \Sbooker\DomainEvents\Persistence\PersistentEventHandler {
+    public function handle(PersistentEvent $event) : void
+    {
+        // Handle Event
+    }
+    public function getHandledEventNames() : array
+    {
+        return [ /* event names as Name Giver returns */ ];
+    }
+};
+
+// Or with Subscriber 
+
+$subscriber = new class implements \Sbooker\DomainEvents\DomainEventSubscriber {
+        public function getListenedEventClasses() : array {
+            return [ \Sbooker\DomainEvents\DomainEvent::class ];
+        }
+        
+        public function handleEvent(\Sbooker\DomainEvents\DomainEvent $event) : void {
+            // haddle domain event
+        }
+    };
+
+$eventHandler = new \Sbooker\DomainEvents\Persistence\ConsumerSubscriberBridge(
+    $nameGiver,
+    $denormalizer, 
+    $subscriber
+);
 
 $consumer = new Consumer(
     $eventStorage,
     $transactionManager,
-    $denormalizer,
-    new PersistentPointerRepository(/* ... */),
-    $nameGiver,
-    new class implements DomainEventSubscriber { /* ... */},
+    new \Sbooker\PersistentPointer\Repository(/* ... */),
+    $eventHandler,
     'subscriber.name'
 );
+
+// Or all with factory
+
+$factory = new \Sbooker\DomainEvents\Persistence\ConsumerFactory(
+        $eventStorage, 
+        $transactionManager,
+        new \Sbooker\PersistentPointer\Repository(/* ... */),
+        $nameGiver,
+        $denormalizer 
+    );
+
+$consumer = $factory->createBySubscriber('subscriber.name', $subscriber);
 
 ```
 

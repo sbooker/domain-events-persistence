@@ -15,6 +15,8 @@ use Sbooker\TransactionManager\TransactionManager;
 
 abstract class TestCase extends \PHPUnit\Framework\TestCase
 {
+    protected const DATE_FORMAT = "Y-m-d\TH:i:s.uP";
+
     private const ACTOR_ID = "9a33a366-0314-4ed2-b8fe-86f137bc10cf";
 
     final protected function getTransactionManager(): TransactionManager
