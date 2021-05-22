@@ -4,28 +4,16 @@ declare(strict_types=1);
 
 namespace Test\Sbooker\DomainEvents\Persistence;
 
-use Gamez\Symfony\Component\Serializer\Normalizer\UuidNormalizer;
 use Ramsey\Uuid\Uuid;
-use Ramsey\Uuid\UuidInterface;
 use Sbooker\DomainEvents\Actor;
-use Sbooker\DomainEvents\DomainEvent;
-use Sbooker\DomainEvents\DomainEventSubscriber;
-use Sbooker\DomainEvents\Persistence\ClassNameNameGiver;
 use Sbooker\DomainEvents\Persistence\Consumer;
 use Sbooker\DomainEvents\Persistence\ConsumeStorage;
+use Sbooker\DomainEvents\Persistence\EventStorage;
 use Sbooker\DomainEvents\Persistence\PersistentEvent;
-use Symfony\Component\PropertyInfo\Extractor\PhpDocExtractor;
-use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;
-use Symfony\Component\PropertyInfo\PropertyInfoExtractor;
-use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
-use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
-use Symfony\Component\Serializer\Normalizer\PropertyNormalizer;
-use Symfony\Component\Serializer\Serializer;
+use Sbooker\DomainEvents\Persistence\PersistentEventHandler;
 
 class EventConsumerTest extends TestCase
 {
-    private const DATE_FORMAT = "Y-m-d\TH:i:s.uP";
-
     /**
      * @dataProvider actorExamples
      */
@@ -43,12 +31,10 @@ class EventConsumerTest extends TestCase
             );
         $persistentEvent = new PersistentEvent(Uuid::uuid4(), TestDomainEvent::class, $occurredAt, Uuid::uuid4(), $payload, 1);
         $consumer = new Consumer(
-            $this->getEventStorage($persistentEvent),
+            $this->getEventStorage([$persistentEvent->getName()], 0, $persistentEvent),
             $this->getTransactionManager(),
-            $this->getDenormalizer(),
             $this->getEmptyPositionStorage(),
-            new ClassNameNameGiver(),
-            $this->getSubscriber($entityId, $actor, $occurredAt),
+            $this->createEventHandler($persistentEvent),
             "consumer"
         );
 
@@ -57,54 +43,22 @@ class EventConsumerTest extends TestCase
         $this->assertTrue($result);
     }
 
-    private function getEventStorage(PersistentEvent $event): ConsumeStorage
+    private function createEventHandler(PersistentEvent $event): PersistentEventHandler
     {
-        return new class ($event) implements ConsumeStorage {
-            private PersistentEvent $event;
-
-            public function __construct(PersistentEvent $event) {
-                $this->event = $event;
-            }
-
-            public function getFirstByPosition(array $eventNames, int $position): ?PersistentEvent
-            {
-                return $this->event;
-            }
-        };
-    }
-
-    private function getSubscriber(UuidInterface $entityId, ?Actor $actor, \DateTimeImmutable $occurredAt): DomainEventSubscriber
-    {
-        $mock = $this->createMock(DomainEventSubscriber::class);
-        $mock->expects($this->once())->method('handleEvent')->with(
-            $this->callback(
-                fn (DomainEvent $event): bool =>
-                    $event instanceof TestDomainEvent
-                    && $entityId->equals($event->getEntityId())
-                    && null === $actor ? null === $event->getActor() : $actor->getId()->equals($event->getActor()->getId())
-                    && $occurredAt->format(self::DATE_FORMAT) === $event->getOccurredAt()->format(self::DATE_FORMAT)
-            )
-        );
+        $mock = $this->createMock(PersistentEventHandler::class);
+        $mock->expects($this->once())->method('handle')->with($event);
+        $mock->expects($this->once())->method('getHandledEventNames')->willReturn([$event->getName()]);
 
         return $mock;
     }
 
-    private function getDenormalizer(): DenormalizerInterface
+    private function getEventStorage(array $eventNames, int $position, PersistentEvent $event): ConsumeStorage
     {
-        return new Serializer([
-            new DateTimeNormalizer([DateTimeNormalizer::FORMAT_KEY => self::DATE_FORMAT]),
-            new UuidNormalizer(),
-            new PropertyNormalizer(
-                null,
-                null,
-                new PropertyInfoExtractor(
-                    [],
-                    [
-                        new PhpDocExtractor(),
-                        new ReflectionExtractor(),
-                    ]
-                )
-            ),
-        ]);
+        $mock = $this->createMock(ConsumeStorage::class);
+        $mock->expects($this->once())->method('getFirstByPosition')
+            ->with($eventNames, $position)
+            ->willReturn($event);
+
+        return $mock;
     }
 }

@@ -11,6 +11,7 @@ use Sbooker\DomainEvents\Persistence\Consumer;
 use Sbooker\DomainEvents\Persistence\ConsumeStorage;
 use Sbooker\DomainEvents\Persistence\WriteStorage;
 use Sbooker\DomainEvents\Persistence\PersistentEvent;
+use Sbooker\DomainEvents\Persistence\PersistentEventHandler;
 use Symfony\Component\Serializer\Serializer;
 
 final class NoEventConsumerTest extends TestCase
@@ -20,10 +21,8 @@ final class NoEventConsumerTest extends TestCase
         $consumer = new Consumer(
             $this->getEmptyEventStorage(),
             $this->getTransactionManager(),
-            new Serializer(),
             $this->getEmptyPositionStorage(),
-            new ClassNameNameGiver(),
-            $this->getDummySubscriber(),
+            $this->getHandler(),
             "consumer"
         );
 
@@ -42,16 +41,11 @@ final class NoEventConsumerTest extends TestCase
         };
     }
 
-    private function getDummySubscriber(): DomainEventSubscriber
+    public function getHandler(): PersistentEventHandler
     {
-        return new class implements DomainEventSubscriber {
+        $mock = $this->createMock(PersistentEventHandler::class);
+        $mock->expects($this->never())->method('handle');
 
-            public function getListenedEventClasses(): array
-            {
-                return [];
-            }
-
-            public function handleEvent(DomainEvent $event): void { }
-        };
+        return $mock;
     }
 }

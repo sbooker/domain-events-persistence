@@ -5,11 +5,8 @@ declare(strict_types=1);
 namespace Sbooker\DomainEvents\Persistence;
 
 use Psr\Log\LoggerInterface;
-use Sbooker\DomainEvents\DomainEvent;
-use Sbooker\DomainEvents\DomainEventSubscriber;
 use Sbooker\PersistentPointer;
 use Sbooker\TransactionManager\TransactionManager;
-use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 
 final class Consumer
 {
@@ -17,13 +14,9 @@ final class Consumer
 
     private TransactionManager $transactionManager;
 
-    private DenormalizerInterface $denormalizer;
-
     private PersistentPointer\Repository $positionStorage;
 
-    private EventNameGiver $nameGiver;
-
-    private DomainEventSubscriber $subscriber;
+    private PersistentEventHandler $handler;
 
     private string $name;
 
@@ -32,19 +25,15 @@ final class Consumer
     public function __construct(
         ConsumeStorage $eventStorage,
         TransactionManager $transactionManager,
-        DenormalizerInterface $denormalizer,
         PersistentPointer\Repository $positionStorage,
-        EventNameGiver $nameGiver,
-        DomainEventSubscriber $subscriber,
+        PersistentEventHandler $handler,
         string $name,
         ?LoggerInterface $logger = null
     ) {
         $this->eventStorage = $eventStorage;
         $this->transactionManager = $transactionManager;
-        $this->denormalizer = $denormalizer;
         $this->positionStorage = $positionStorage;
-        $this->nameGiver = $nameGiver;
-        $this->subscriber = $subscriber;
+        $this->handler = $handler;
         $this->name = $name;
         $this->logger = $logger;
     }
@@ -69,19 +58,14 @@ final class Consumer
 
                 $this->debug('Consume event at position #{p}', ['p' => $event->getPosition()]);
 
-                /** @var DomainEvent $domainEvent */
-                $domainEvent = $this->denormalizer->denormalize(
-                    $event->getPayload(),
-                    $this->nameGiver->getClass($event->getName()),
-                );
+                $this->handleEvent($event);
 
-                $this->handleEvent($domainEvent);
-
-                if (null === $event->getPosition()) {
+                $newPosition = $event->getPosition();
+                if (null === $newPosition) {
                     throw new \RuntimeException('Event must have position to consume');
                 }
 
-                $position->increaseTo($event->getPosition());
+                $position->increaseTo($newPosition);
 
                 return true;
             });
@@ -89,11 +73,7 @@ final class Consumer
 
     public function getConsumableEventNames(): array
     {
-        return
-            array_map(
-                [ $this->nameGiver, 'getNameByClass' ],
-                $this->getSubscriber()->getListenedEventClasses()
-            );
+        return $this->handler->getHandledEventNames();
     }
 
     private function getName(): string
@@ -102,17 +82,11 @@ final class Consumer
     }
 
     /**
-     * @param DomainEvent $event
      * @throws \Exception
      */
-    private function handleEvent(DomainEvent $event): void
+    private function handleEvent(PersistentEvent $event): void
     {
-        $this->getSubscriber()->handleEvent($event);
-    }
-
-    public function getSubscriber(): DomainEventSubscriber
-    {
-        return $this->subscriber;
+        $this->handler->handle($event);
     }
 
     private function debug(string $message, array $context = []): void
