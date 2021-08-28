@@ -9,8 +9,6 @@ use Sbooker\DomainEvents\Persistence\ClassNameNameGiver;
 use Sbooker\DomainEvents\Persistence\Consumer;
 use Sbooker\DomainEvents\Persistence\ConsumerFactory;
 use Sbooker\DomainEvents\Persistence\ConsumeStorage;
-use Sbooker\PersistentPointer\PointerStorage;
-use Sbooker\PersistentPointer\Repository;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 
 final class ConsumerFactoryTest extends TestCase
@@ -20,7 +18,6 @@ final class ConsumerFactoryTest extends TestCase
         $factory = new ConsumerFactory(
             $this->getConsumeStorage(),
             $this->getTransactionManager(),
-            $this->getPointerStorage(),
             new ClassNameNameGiver(),
             $this->getDenormalizer()
         );
@@ -36,15 +33,6 @@ final class ConsumerFactoryTest extends TestCase
         $mock->expects($this->never())->method('getFirstByPosition');
 
         return $mock;
-    }
-
-    private function getPointerStorage(): Repository
-    {
-        $mock = $this->createMock(PointerStorage::class);
-        $mock->expects($this->never())->method('add');
-        $mock->expects($this->never())->method('getAndLock');
-
-        return new Repository($mock);
     }
 
     private function getDenormalizer(): DenormalizerInterface

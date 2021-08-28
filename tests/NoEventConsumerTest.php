@@ -21,7 +21,6 @@ final class NoEventConsumerTest extends TestCase
         $consumer = new Consumer(
             $this->getEmptyEventStorage(),
             $this->getTransactionManager(),
-            $this->getEmptyPositionStorage(),
             $this->getHandler(),
             "consumer"
         );
