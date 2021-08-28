@@ -33,7 +33,6 @@ class EventConsumerTest extends TestCase
         $consumer = new Consumer(
             $this->getEventStorage([$persistentEvent->getName()], 0, $persistentEvent),
             $this->getTransactionManager(),
-            $this->getEmptyPositionStorage(),
             $this->createEventHandler($persistentEvent),
             "consumer"
         );

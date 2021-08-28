@@ -13,28 +13,19 @@ use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 final class ConsumerFactory
 {
     private ConsumeStorage $eventStorage;
-
     private TransactionManager $transactionManager;
-
-    private Repository $positionStorage;
-
     private EventNameGiver $nameGiver;
-
     private DenormalizerInterface $denormalizer;
-
     private ?LoggerInterface $logger;
-
     public function __construct(
         ConsumeStorage $eventStorage,
         TransactionManager $transactionManager,
-        Repository $positionStorage,
         EventNameGiver $nameGiver,
         DenormalizerInterface $denormalizer,
         ?LoggerInterface $logger = null
     ) {
         $this->eventStorage = $eventStorage;
         $this->transactionManager = $transactionManager;
-        $this->positionStorage = $positionStorage;
         $this->nameGiver = $nameGiver;
         $this->denormalizer = $denormalizer;
         $this->logger = $logger;
@@ -59,7 +50,6 @@ final class ConsumerFactory
             new Consumer(
                 $this->eventStorage,
                 $this->transactionManager,
-                $this->positionStorage,
                 $handler,
                 $name,
                 $this->logger

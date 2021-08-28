@@ -11,9 +11,7 @@ use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 final class ConsumerSubscriberBridge implements PersistentEventHandler
 {
     private EventNameGiver $nameGiver;
-
     private DenormalizerInterface $denormalizer;
-
     private DomainEventSubscriber $subscriber;
 
     public function __construct(EventNameGiver $nameGiver, DenormalizerInterface $denormalizer, DomainEventSubscriber $subscriber)

@@ -23,25 +23,13 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
     {
         return new TransactionManager(
             new class implements TransactionHandler {
-                public function begin(): void { }
-                public function commit(): void { }
-                public function rollBack(): void { }
-                public function clear(): void { }
-            }
-        );
-    }
 
-    final protected function getEmptyPositionStorage(): Repository
-    {
-        return new Repository(
-            new class implements PointerStorage {
-
-                public function add(Pointer $pointer): void { }
-
-                public function getAndLock(string $name): ?Pointer
-                {
-                    return null;
-                }
+                public function begin(): void {}
+                public function persist(object $entity): void {}
+                public function commit(array $entities): void {}
+                public function rollback(): void {}
+                public function clear(): void {}
+                public function getLocked(string $entityClassName, $entityId): ?object { return null; }
             }
         );
     }
