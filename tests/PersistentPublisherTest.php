@@ -12,7 +12,8 @@ use Sbooker\DomainEvents\Persistence\EventNameGiver;
 use Sbooker\DomainEvents\Persistence\PersistentEvent;
 use Sbooker\DomainEvents\Persistence\PersistentPublisher;
 use Sbooker\DomainEvents\Persistence\PositionGenerator;
-use Sbooker\DomainEvents\Persistence\WriteStorage;
+use Sbooker\TransactionManager\TransactionHandler;
+use Sbooker\TransactionManager\TransactionManager;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
 final class PersistentPublisherTest extends TestCase
@@ -27,14 +28,31 @@ final class PersistentPublisherTest extends TestCase
         $eventName = 'event.name';
         $normalizedEvent = ['property' => 'value'];
         $persistentEvent = new PersistentEvent(Uuid::uuid4(), $eventName, $event->getOccurredAt(), $event->getEntityId(), $normalizedEvent, $postion);
-        $storage = $this->createWriteStorage($persistentEvent);
         $nameGiver = $this->createNameGiver($event, $eventName);
         $normalizer = $this->createNormalizer($event, $normalizedEvent);
         $positionGenerator = $this->createPositionGenerator($postion);
+        $transactionManager = $this->createTransactionManager($persistentEvent);
 
-        $publisher = new PersistentPublisher($storage, $nameGiver, $normalizer, $positionGenerator);
+        $publisher = new PersistentPublisher($transactionManager, $nameGiver, $normalizer, $positionGenerator);
 
-        $publisher->publish($event);
+        $transactionManager->transactional(
+            fn() => $publisher->publish($event)
+        );
+    }
+
+    private function createTransactionManager(PersistentEvent $persistentEvent): TransactionManager
+    {
+        return new TransactionManager($this->getTransactionHandler($persistentEvent));
+    }
+
+    protected function getTransactionHandler(PersistentEvent $persistentEvent): TransactionHandler
+    {
+        $mock = $this->createMock(TransactionHandler::class);
+        $mock->expects($this->once())->method('begin');
+        $mock->expects($this->once())->method('persist')->with(new PersistentEventMatcher($persistentEvent));
+        $mock->expects($this->once())->method('commit')->with();
+
+        return $mock;
     }
 
     public function examples(): array
@@ -48,16 +66,6 @@ final class PersistentPublisherTest extends TestCase
     private function createEvent(UuidInterface $id): DomainEvent
     {
         return new class($id) extends DomainEvent {};
-    }
-
-    private function createWriteStorage(PersistentEvent $persistentEvent): WriteStorage
-    {
-        $mock = $this->createMock(WriteStorage::class);
-        $mock->expects($this->once())
-            ->method('add')
-            ->with(new PersistentEventMatcher($persistentEvent));
-
-        return $mock;
     }
 
     private function createNameGiver(DomainEvent $event, string $eventName): EventNameGiver
@@ -114,6 +122,52 @@ class PersistentEventMatcher extends Constraint
             $this->persistentEvent->getEntityId() === $other->getEntityId()
             &&
             $this->persistentEvent->getOccurredAt() === $other->getOccurredAt();
+    }
+
+    protected function additionalFailureDescription($other): string
+    {
+        return parent::additionalFailureDescription($other) . $this->buildFailureDescription($other);
+    }
+
+    private function buildFailureDescription($other): string
+    {
+        if (!$other instanceof PersistentEvent) {
+            return 'Expected ' . PersistentEvent::class . ', ' . var_export($other, true) . 'given.';
+        }
+        $errors = [];
+        if ($this->persistentEvent->getName() !== $other->getName()) {
+            $errors[] = $this->printError('name', $this->persistentEvent->getName(), $other->getName());
+        }
+        if ($this->persistentEvent->getPosition() !== $other->getPosition()) {
+            $errors[] = $this->printError('position', (string)$this->persistentEvent->getPosition(), (string)$other->getPosition());
+        }
+        if ($this->persistentEvent->getPayload() !== $other->getPayload()) {
+            $errors[] = $this->printError(
+                'payload',
+                var_export($this->persistentEvent->getPayload(), true),
+                var_export($other->getPayload(), true)
+            );
+        }
+        if (!$this->persistentEvent->getEntityId()->equals($other->getEntityId())) {
+            $errors[] = $this->printError(
+                'entityId',
+                $this->persistentEvent->getEntityId()->toString(),
+                $other->getEntityId()->toString(),
+            );
+        }
+        if ($this->persistentEvent->getOccurredAt() !== $other->getOccurredAt()) {
+            $errors[] = $this->printError(
+                'occurredAt',
+                var_export($this->persistentEvent->getOccurredAt(), true),
+                var_export($other->getOccurredAt(), true)
+            );
+        }
+        return implode(' ', $errors);
+    }
+
+    private function printError(string $param, string $expected, string $given): string
+    {
+        return "Expected $param {$expected}, $given given.";
     }
 
     public function toString(): string
