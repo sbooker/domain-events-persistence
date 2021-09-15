@@ -6,21 +6,19 @@ namespace Sbooker\DomainEvents\Persistence;
 
 use Sbooker\DomainEvents\DomainEvent;
 use Sbooker\DomainEvents\Publisher;
+use Sbooker\TransactionManager\TransactionManager;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
 final class PersistentPublisher implements Publisher
 {
-    private WriteStorage $storage;
-
+    private TransactionManager $transactionManager;
     private EventNameGiver $nameGiver;
-
     private NormalizerInterface $normalizer;
-
     private ?PositionGenerator $positionGenerator;
 
-    public function __construct(WriteStorage $storage, EventNameGiver $nameGiver, NormalizerInterface $normalizer, ?PositionGenerator $positionGenerator = null)
+    public function __construct(TransactionManager $transactionManager, EventNameGiver $nameGiver, NormalizerInterface $normalizer, ?PositionGenerator $positionGenerator = null)
     {
-        $this->storage = $storage;
+        $this->transactionManager = $transactionManager;
         $this->nameGiver = $nameGiver;
         $this->normalizer = $normalizer;
         $this->positionGenerator = $positionGenerator;
@@ -33,6 +31,6 @@ final class PersistentPublisher implements Publisher
     {
         $position = null !== $this->positionGenerator ? $this->positionGenerator->next() : null;
 
-        $this->storage->add(PersistentEvent::create($event, $this->nameGiver, $this->normalizer, $position));
+        $this->transactionManager->persist(PersistentEvent::create($event, $this->nameGiver, $this->normalizer, $position));
     }
 }
