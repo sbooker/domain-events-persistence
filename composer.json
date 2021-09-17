@@ -13,7 +13,7 @@
     "php": "^7.4 || ^8.0",
     "psr/log": "^1.0",
     "sbooker/domain-events": "^2.0",
-    "sbooker/transaction-manager": "^2.0",
+    "sbooker/transaction-manager": "^2.1",
     "sbooker/persistent-pointer": "^1.0",
     "symfony/serializer": "^5.0"
   },
