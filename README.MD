@@ -18,7 +18,16 @@ composer require sbooker/domain-events-persistence
 ### Usage
 
 #### Publish event
-See [sbooker/domain-events README](https://github.com/sbooker/domain-events/blob/master/README.MD) 
+See [sbooker/domain-events README](https://github.com/sbooker/domain-events/blob/master/README.MD).
+Also you need configure DomainEventPreCommitProcessor 
+```php
+$transactionManager = new TransactionManager(
+    new class implements TransactionHandler { ... },
+    new DomainEventPreCommitProcessor(
+        new PersistentPublisher(...)
+    )
+);
+```
 
 #### Subscribe on events
 
