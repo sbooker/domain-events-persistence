@@ -33,7 +33,8 @@ final class PersistentPublisherTest extends TestCase
         $positionGenerator = $this->createPositionGenerator($postion);
         $transactionManager = $this->createTransactionManager($persistentEvent);
 
-        $publisher = new PersistentPublisher($transactionManager, $nameGiver, $normalizer, $positionGenerator);
+        $publisher = new PersistentPublisher($nameGiver, $normalizer, $positionGenerator);
+        $publisher->setTransactionManager($transactionManager);
 
         $transactionManager->transactional(
             fn() => $publisher->publish($event)
