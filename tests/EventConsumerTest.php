@@ -8,7 +8,6 @@ use Ramsey\Uuid\Uuid;
 use Sbooker\DomainEvents\Actor;
 use Sbooker\DomainEvents\Persistence\Consumer;
 use Sbooker\DomainEvents\Persistence\ConsumeStorage;
-use Sbooker\DomainEvents\Persistence\EventStorage;
 use Sbooker\DomainEvents\Persistence\PersistentEvent;
 use Sbooker\DomainEvents\Persistence\PersistentEventHandler;
 
