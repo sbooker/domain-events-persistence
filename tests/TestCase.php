@@ -23,7 +23,6 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
     {
         return new TransactionManager(
             new class implements TransactionHandler {
-
                 public function begin(): void {}
                 public function persist(object $entity): void {}
                 public function commit(array $entities): void {}
