@@ -14,10 +14,37 @@ use Sbooker\DomainEvents\Persistence\PersistentPublisher;
 use Sbooker\DomainEvents\Persistence\PositionGenerator;
 use Sbooker\TransactionManager\TransactionHandler;
 use Sbooker\TransactionManager\TransactionManager;
+use Sbooker\TransactionManager\TransactionManagerAware;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
 final class PersistentPublisherTest extends TestCase
 {
+    /**
+     * @dataProvider positionGeneratorExamples
+     */
+    public function testSetTransactionManager(PositionGenerator $positionGenerator): void
+    {
+        $entityId = Uuid::uuid4();
+        $event = $this->createEvent($entityId);
+        $eventName = 'event.name';
+        $normalizedEvent = ['property' => 'value'];
+        $persistentEvent = new PersistentEvent(Uuid::uuid4(), $eventName, $event->getOccurredAt(), $event->getEntityId(), $normalizedEvent, 1);
+        $nameGiver = $this->createNameGiver($event, $eventName, 0);
+        $normalizer = $this->createNormalizer($event, $normalizedEvent, 0);
+        $transactionManager = new TransactionManager($this->createNeverCalledTransactionHandler());
+
+        $publisher = new PersistentPublisher($nameGiver, $normalizer, $positionGenerator);
+        $publisher->setTransactionManager($transactionManager);
+    }
+
+    public function positionGeneratorExamples(): array
+    {
+        return [
+            [ $this->createPositionGenerator(1, 0) ],
+            [ $this->createTransactionManagerAwarePositionGenerator() ],
+        ];
+    }
+
     /**
      * @dataProvider examples
      */
@@ -41,6 +68,28 @@ final class PersistentPublisherTest extends TestCase
         );
     }
 
+    /**
+     * @dataProvider examples
+     */
+    public function testTransactionManagerNotSets(?int $postion): void
+    {
+        $entityId = Uuid::uuid4();
+        $event = $this->createEvent($entityId);
+        $eventName = 'event.name';
+        $normalizedEvent = ['property' => 'value'];
+        $nameGiver = $this->createNameGiver($event, $eventName, 0);
+        $normalizer = $this->createNormalizer($event, $normalizedEvent, 0);
+        $positionGenerator = $this->createPositionGenerator($postion, 0);
+        $transactionManager = new TransactionManager($this->getFailedTransactionHandler());
+
+        $publisher = new PersistentPublisher($nameGiver, $normalizer, $positionGenerator);
+
+        $this->expectException(\RuntimeException::class);
+        $transactionManager->transactional(
+            fn() => $publisher->publish($event)
+        );
+    }
+
     private function createTransactionManager(PersistentEvent $persistentEvent): TransactionManager
     {
         return new TransactionManager($this->getTransactionHandler($persistentEvent));
@@ -51,7 +100,32 @@ final class PersistentPublisherTest extends TestCase
         $mock = $this->createMock(TransactionHandler::class);
         $mock->expects($this->once())->method('begin');
         $mock->expects($this->once())->method('persist')->with(new PersistentEventMatcher($persistentEvent));
-        $mock->expects($this->once())->method('commit')->with();
+        $mock->expects($this->once())->method('commit');
+        $mock->expects($this->never())->method('rollback');
+
+        return $mock;
+    }
+
+    public function getFailedTransactionHandler(): TransactionHandler
+    {
+        $mock = $this->createMock(TransactionHandler::class);
+        $mock->expects($this->once())->method('begin');
+        $mock->expects($this->never())->method('persist');
+        $mock->expects($this->never())->method('commit');
+        $mock->expects($this->once())->method('rollback');
+
+        return $mock;
+    }
+
+    private function createNeverCalledTransactionHandler(): TransactionHandler
+    {
+        $mock = $this->createMock(TransactionHandler::class);
+        $mock->expects($this->never())->method('begin');
+        $mock->expects($this->never())->method('persist');
+        $mock->expects($this->never())->method('commit');
+        $mock->expects($this->never())->method('rollback');
+        $mock->expects($this->never())->method('clear');
+        $mock->expects($this->never())->method('getLocked');
 
         return $mock;
     }
@@ -69,30 +143,39 @@ final class PersistentPublisherTest extends TestCase
         return new class($id) extends DomainEvent {};
     }
 
-    private function createNameGiver(DomainEvent $event, string $eventName): EventNameGiver
+    private function createNameGiver(DomainEvent $event, string $eventName, int $count = 1): EventNameGiver
     {
         $mock = $this->createMock(EventNameGiver::class);
-        $mock->expects($this->once())->method('getNameByClass')->with(get_class($event))->willReturn($eventName);
+        $mock->expects($this->exactly($count))->method('getNameByClass')->with(get_class($event))->willReturn($eventName);
 
         return $mock;
     }
 
-    private function createNormalizer(DomainEvent $event, array $normalizedEvent): NormalizerInterface
+    private function createNormalizer(DomainEvent $event, array $normalizedEvent, int $count = 1): NormalizerInterface
     {
         $mock = $this->createMock(NormalizerInterface::class);
-        $mock->expects($this->once())->method('normalize')->with($event)->willReturn($normalizedEvent);
+        $mock->expects($this->exactly($count))->method('normalize')->with($event)->willReturn($normalizedEvent);
 
         return $mock;
     }
 
-    private function createPositionGenerator(?int $number): ?PositionGenerator
+    private function createPositionGenerator(?int $number, int $count = 1): ?PositionGenerator
     {
         if (null === $number) {
             return null;
         }
 
         $mock = $this->createMock(PositionGenerator::class);
-        $mock->expects($this->once())->method('next')->willReturn($number);
+        $mock->expects($this->exactly($count))->method('next')->willReturn($number);
+
+        return $mock;
+    }
+
+    private function createTransactionManagerAwarePositionGenerator(): TransactionManagerAwarePositionGenerator
+    {
+        $mock = $this->createMock(TransactionManagerAwarePositionGenerator::class);
+        $mock->expects($this->never())->method('next');
+        $mock->expects($this->once())->method('setTransactionManager');
 
         return $mock;
     }
@@ -176,3 +259,5 @@ class PersistentEventMatcher extends Constraint
         return 'Persistent events is same';
     }
 }
+
+interface TransactionManagerAwarePositionGenerator extends PositionGenerator, TransactionManagerAware {}
