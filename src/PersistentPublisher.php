@@ -24,9 +24,12 @@ final class PersistentPublisher implements Publisher, TransactionManagerAware
         $this->positionGenerator = $positionGenerator;
     }
 
-    public function setTransactionManager(?TransactionManager $transactionManager): void
+    public function setTransactionManager(TransactionManager $transactionManager): void
     {
         $this->transactionManager = $transactionManager;
+        if ($this->positionGenerator instanceof TransactionManagerAware) {
+            $this->positionGenerator->setTransactionManager($transactionManager);
+        }
     }
 
     /**

@@ -18,11 +18,32 @@ use SebastianBergmann\Comparator\Factory;
 
 final class PreCommitEntityProcessorTest extends TestCase
 {
+    public function testProcessNotDomainEntity(): void
+    {
+        $id = Uuid::uuid4();
+        $object = new SomeObject($id);
+        $transactionManager = $this->createTransactionManager($object, [], $this->createNeverCalledPublisher());
+
+        $transactionManager->transactional(function () use ($transactionManager, $id) {
+            $entity = $transactionManager->getLocked(SomeObject::class, $id);
+            $entity->doSomething();
+        });
+    }
+
+    private function createNeverCalledPublisher(): Publisher
+    {
+        $mock = $this->createMock(Publisher::class);
+        $mock->expects($this->never())->method('publish');
+
+        return $mock;
+    }
+
+
     public function testPublishEvent(): void
     {
         $aggregateRoot = $this->createAggregateRoot();
         $events = [ new AggregateRootSomethingDoing($aggregateRoot->getId()) ];
-        $transactionManager = $this->createTransactionManager($aggregateRoot, $events);
+        $transactionManager = $this->createTransactionManager($aggregateRoot, $events, $this->createPublisher());
 
         $transactionManager->transactional(function () use ($transactionManager, $aggregateRoot): void {
             $entity = $transactionManager->getLocked(AggregateRoot::class, $aggregateRoot->getId());
@@ -34,7 +55,7 @@ final class PreCommitEntityProcessorTest extends TestCase
     {
         $aggregateRoot = $this->createAggregateRoot();
         $events = [ new AggregateRootSomethingDoing($aggregateRoot->getId()), new EntitySomethingDoing($aggregateRoot->getEntityId()) ];
-        $transactionManager = $this->createTransactionManager($aggregateRoot, $events);
+        $transactionManager = $this->createTransactionManager($aggregateRoot, $events, $this->createPublisher());
 
         $transactionManager->transactional(function () use ($transactionManager, $aggregateRoot): void {
             /** @var AggregateRoot $entity */
@@ -49,9 +70,9 @@ final class PreCommitEntityProcessorTest extends TestCase
         Factory::getInstance()->register(new DomainEventComparator());
     }
 
-    private function createTransactionManager(AggregateRoot $aggregateRoot, array $events): TransactionManager
+    private function createTransactionManager(object $aggregateRoot, array $events, Publisher $publisher): TransactionManager
     {
-        $preCommitProcessor = new DomainEventPreCommitProcessor($this->createPublisher());
+        $preCommitProcessor = new DomainEventPreCommitProcessor($publisher);
 
         $transactionManager = new TransactionManager(
             $this->createTransactionHandler($aggregateRoot, $events),
@@ -63,7 +84,7 @@ final class PreCommitEntityProcessorTest extends TestCase
         return $transactionManager;
     }
 
-    private function createTransactionHandler(AggregateRoot $aggregateRoot, array $events): TransactionHandler
+    private function createTransactionHandler(object $aggregateRoot, array $events): TransactionHandler
     {
         $mock = $this->createMock(TransactionHandler::class);
 
@@ -73,7 +94,7 @@ final class PreCommitEntityProcessorTest extends TestCase
             ->withConsecutive(...array_map(fn(DomainEvent $event): array => [ $event ], $events));
         $mock->expects($this->never())->method('rollback');
         $mock->expects($this->once())->method('getLocked')
-            ->with(AggregateRoot::class, $aggregateRoot->getId())
+            ->with(get_class($aggregateRoot), $aggregateRoot->getId())
             ->willReturn($aggregateRoot);
 
         $mock->expects($this->once())->method('commit')->with(array_merge($events, [$aggregateRoot],));
@@ -149,6 +170,26 @@ final class AggregateRoot implements DomainEntity
 final class AggregateRootSomethingDoing extends DomainEvent
 {
 
+}
+
+final class SomeObject {
+    use DomainEventCollector;
+    private UuidInterface $id;
+
+    public function __construct(UuidInterface $id)
+    {
+        $this->id = $id;
+    }
+
+    public function doSomething(): void
+    {
+        $this->publish(new EntitySomethingDoing($this->id));
+    }
+
+    public function getId(): UuidInterface
+    {
+        return $this->id;
+    }
 }
 
 final class Entity implements DomainEntity {
