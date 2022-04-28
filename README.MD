@@ -89,7 +89,6 @@ $eventHandler = new \Sbooker\DomainEvents\Persistence\ConsumerSubscriberBridge(
 $consumer = new Consumer(
     $eventStorage,
     $transactionManager,
-    new \Sbooker\PersistentPointer\Repository(/* ... */),
     $eventHandler,
     'subscriber.name'
 );
@@ -99,7 +98,6 @@ $consumer = new Consumer(
 $factory = new \Sbooker\DomainEvents\Persistence\ConsumerFactory(
         $eventStorage, 
         $transactionManager,
-        new \Sbooker\PersistentPointer\Repository(/* ... */),
         $nameGiver,
         $denormalizer 
     );

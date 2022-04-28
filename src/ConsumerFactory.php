@@ -6,7 +6,6 @@ namespace Sbooker\DomainEvents\Persistence;
 
 use Psr\Log\LoggerInterface;
 use Sbooker\DomainEvents\DomainEventSubscriber;
-use Sbooker\PersistentPointer\Repository;
 use Sbooker\TransactionManager\TransactionManager;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 

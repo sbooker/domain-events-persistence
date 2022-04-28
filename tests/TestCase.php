@@ -7,9 +7,6 @@ namespace Test\Sbooker\DomainEvents\Persistence;
 use Ramsey\Uuid\Uuid;
 use Sbooker\DomainEvents\Actor;
 use Sbooker\DomainEvents\DomainEvent;
-use Sbooker\PersistentPointer\Pointer;
-use Sbooker\PersistentPointer\PointerStorage;
-use Sbooker\PersistentPointer\Repository;
 use Sbooker\TransactionManager\TransactionHandler;
 use Sbooker\TransactionManager\TransactionManager;
 
