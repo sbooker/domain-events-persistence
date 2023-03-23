@@ -8,7 +8,11 @@ use Psr\Log\LoggerInterface;
 use Sbooker\PersistentPointer\Pointer;
 use Sbooker\TransactionManager\TransactionManager;
 
-final class Consumer
+/**
+ * @deprecated use PersistentConsumer instead
+ * @final
+ */
+class Consumer implements ConsumerInterface
 {
     private ConsumeStorage $eventStorage;
     private TransactionManager $transactionManager;

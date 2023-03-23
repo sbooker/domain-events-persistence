@@ -16,6 +16,7 @@ final class ConsumerFactory
     private EventNameGiver $nameGiver;
     private DenormalizerInterface $denormalizer;
     private ?LoggerInterface $logger;
+
     public function __construct(
         ConsumeStorage $eventStorage,
         TransactionManager $transactionManager,
@@ -30,7 +31,7 @@ final class ConsumerFactory
         $this->logger = $logger;
     }
 
-    public function createBySubscriber(string $name, DomainEventSubscriber $subscriber): Consumer
+    public function createBySubscriber(string $name, DomainEventSubscriber $subscriber): ConsumerInterface
     {
         return
             $this->createByHandler(
@@ -43,10 +44,10 @@ final class ConsumerFactory
             );
     }
 
-    public function createByHandler(string $name, PersistentEventHandler $handler): Consumer
+    public function createByHandler(string $name, PersistentEventHandler $handler): ConsumerInterface
     {
         return
-            new Consumer(
+            new PersistentConsumer(
                 $this->eventStorage,
                 $this->transactionManager,
                 $handler,

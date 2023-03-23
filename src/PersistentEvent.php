@@ -10,7 +10,10 @@ use Sbooker\DomainEvents\DomainEvent;
 use Symfony\Component\Serializer\Exception\NotNormalizableValueException;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
-/* final */ class PersistentEvent
+/**
+ * @final
+ */
+class PersistentEvent
 {
     private UuidInterface $id;
 
