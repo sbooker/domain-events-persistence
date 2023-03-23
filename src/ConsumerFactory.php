@@ -17,11 +17,11 @@ final class ConsumerFactory
     private DenormalizerInterface $denormalizer;
     private ?LoggerInterface $logger;
     public function __construct(
-        ConsumeStorage $eventStorage,
-        TransactionManager $transactionManager,
-        EventNameGiver $nameGiver,
+        ConsumeStorage        $eventStorage,
+        TransactionManager    $transactionManager,
+        EventNameGiver        $nameGiver,
         DenormalizerInterface $denormalizer,
-        ?LoggerInterface $logger = null
+        ?LoggerInterface      $logger = null
     ) {
         $this->eventStorage = $eventStorage;
         $this->transactionManager = $transactionManager;

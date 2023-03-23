@@ -6,16 +6,16 @@ namespace Sbooker\DomainEvents\Persistence;
 
 use Sbooker\DomainEvents\DomainEvent;
 use Sbooker\DomainEvents\Publisher;
-use Sbooker\TransactionManager\TransactionManager;
-use Sbooker\TransactionManager\TransactionManagerAware;
+use Sbooker\TransactionManager\EntityManager;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
-final class PersistentPublisher implements Publisher, TransactionManagerAware
+final class PersistentPublisher implements Publisher
 {
-    private ?TransactionManager $transactionManager = null;
     private EventNameGiver $nameGiver;
     private NormalizerInterface $normalizer;
     private ?PositionGenerator $positionGenerator;
+
+    private ?EntityManager $entityManager = null;
 
     public function __construct(EventNameGiver $nameGiver, NormalizerInterface $normalizer, ?PositionGenerator $positionGenerator = null)
     {
@@ -24,12 +24,9 @@ final class PersistentPublisher implements Publisher, TransactionManagerAware
         $this->positionGenerator = $positionGenerator;
     }
 
-    public function setTransactionManager(TransactionManager $transactionManager): void
+    public function withEntityManager(EntityManager $entityManager): void
     {
-        $this->transactionManager = $transactionManager;
-        if ($this->positionGenerator instanceof TransactionManagerAware) {
-            $this->positionGenerator->setTransactionManager($transactionManager);
-        }
+        $this->entityManager = $entityManager;
     }
 
     /**
@@ -37,12 +34,12 @@ final class PersistentPublisher implements Publisher, TransactionManagerAware
      */
     public function publish(DomainEvent $event): void
     {
-        if (null === $this->transactionManager) {
-            throw new \RuntimeException('Transaction manager not sets.');
+        if (null === $this->entityManager) {
+            throw new \RuntimeException('Entity manager not sets.');
         }
 
         $position = null !== $this->positionGenerator ? $this->positionGenerator->next() : null;
 
-        $this->transactionManager->persist(PersistentEvent::create($event, $this->nameGiver, $this->normalizer, $position));
+        $this->entityManager->persist(PersistentEvent::create($event, $this->nameGiver, $this->normalizer, $position));
     }
 }

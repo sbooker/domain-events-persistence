@@ -6,7 +6,11 @@ namespace Sbooker\DomainEvents\Persistence;
 
 final class MapNameGiver extends EventNameGiver
 {
-    /** @var string[] FQCN => string */
+    /**
+     * @template T of Sbooker\DomainEvents\DomainEvent
+     *
+     * @var array<T::class, string>
+     */
     private array $map;
 
     public function __construct(array $map)

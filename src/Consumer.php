@@ -6,6 +6,7 @@ namespace Sbooker\DomainEvents\Persistence;
 
 use Psr\Log\LoggerInterface;
 use Sbooker\PersistentPointer\Pointer;
+use Sbooker\TransactionManager\EntityManager;
 use Sbooker\TransactionManager\TransactionManager;
 
 final class Consumer
@@ -36,8 +37,8 @@ final class Consumer
     public function consume(): bool
     {
         return
-            $this->transactionManager->transactional(function (): bool {
-                $position = $this->getPosition();
+            $this->transactionManager->transactional(function (EntityManager $em): bool {
+                $position = $this->getPosition($em);
 
                 $this->log('Consume event after position #{p}', ['p' => $position->getValue()]);
 
@@ -73,12 +74,12 @@ final class Consumer
         return $this->name;
     }
 
-    private function getPosition(): Pointer
+    private function getPosition(EntityManager $em): Pointer
     {
-        $position = $this->transactionManager->getLocked(Pointer::class, $this->getName());
+        $position = $em->getLocked(Pointer::class, $this->getName());
         if (null === $position) {
             $position = new Pointer($this->getName());
-            $this->transactionManager->persist($position);
+            $em->persist($position);
         }
 
         return $position;

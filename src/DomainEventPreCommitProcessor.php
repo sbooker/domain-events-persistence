@@ -6,11 +6,10 @@ namespace Sbooker\DomainEvents\Persistence;
 
 use Sbooker\DomainEvents\DomainEntity;
 use Sbooker\DomainEvents\Publisher;
+use Sbooker\TransactionManager\EntityManager;
 use Sbooker\TransactionManager\PreCommitEntityProcessor;
-use Sbooker\TransactionManager\TransactionManager;
-use Sbooker\TransactionManager\TransactionManagerAware;
 
-final class DomainEventPreCommitProcessor implements PreCommitEntityProcessor, TransactionManagerAware
+final class DomainEventPreCommitProcessor implements PreCommitEntityProcessor
 {
     private Publisher $publisher;
 
@@ -19,19 +18,15 @@ final class DomainEventPreCommitProcessor implements PreCommitEntityProcessor, T
         $this->publisher = $publisher;
     }
 
-    public function process(object $entity): void
+    public function process(EntityManager $em, object $entity): void
     {
         if (!$entity instanceof DomainEntity) {
             return;
         }
+        if ($this->publisher instanceof PersistentPublisher) {
+            $this->publisher->withEntityManager($em);
+        }
 
         $entity->dispatchEvents($this->publisher);
-    }
-
-    public function setTransactionManager(TransactionManager $transactionManager): void
-    {
-        if ($this->publisher instanceof TransactionManagerAware) {
-            $this->publisher->setTransactionManager($transactionManager);
-        }
     }
 }
