@@ -6,6 +6,7 @@ namespace Sbooker\DomainEvents\Persistence;
 
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
+use Sbooker\DomainEvents\Actor;
 use Sbooker\DomainEvents\DomainEvent;
 use Symfony\Component\Serializer\Exception\NotNormalizableValueException;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
@@ -40,6 +41,34 @@ class PersistentEvent
         $this->entityId = $entityId;
         $this->payload = $payload;
         $this->position = $position;
+    }
+
+    /**
+     * @throws \Symfony\Component\Serializer\Exception\ExceptionInterface
+     */
+    public static function fromRaw(
+        UuidInterface $id,
+        string $name,
+        \DateTimeImmutable $occurredAt,
+        UuidInterface $entityId,
+        array $payload,
+        NormalizerInterface $normalizer,
+        ?Actor $actor = null,
+        ?int $position = null
+    ): self
+    {
+        return
+            new self(
+                $id,
+                $name,
+                $occurredAt,
+                $entityId,
+                array_merge(
+                    $payload,
+                    $normalizer->normalize(new RequiresPayloadProperties($entityId, $occurredAt, $actor), 'json')
+                ),
+                $position
+            );
     }
 
     /**

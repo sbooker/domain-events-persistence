@@ -45,7 +45,7 @@ final class PersistentEventTest extends TestCase
         $normalizedEvent = array_merge(
             [
                 "entityId" => $entityId->toString(),
-                "occurredAt" => $domainEvent->getOccurredAt()->format(\DateTimeImmutable::RFC3339)
+                "occurredAt" => $domainEvent->getOccurredAt()->format(self::DATE_FORMAT)
             ],
             $actorPayloadPart
         );
@@ -55,6 +55,31 @@ final class PersistentEventTest extends TestCase
         $this->assertEquals($eventName, $event->getName());
         $this->assertEquals($domainEvent->getOccurredAt(), $event->getOccurredAt());
         $this->assertEquals($normalizedEvent, $event->getPayload());
+        $this->assertNull($event->getPosition());
+    }
+
+    public function testFromRaw(): void
+    {
+        $id = Uuid::uuid4();
+        $name = "event.name";
+        $at = new \DateTimeImmutable();
+        $entityId = Uuid::uuid4();
+        $payload = [ "a" => "A", "b" => "Ba" ];
+        $expectedPayload = [
+            "a" => "A",
+            "b" => "Ba",
+            "entityId" => $entityId->toString(),
+            "occurredAt" => $at->format(self::DATE_FORMAT),
+            "actor" => null
+        ];
+
+        $event = PersistentEvent::fromRaw($id, $name, $at, $entityId, $payload, $this->getNormalizer());
+
+        $this->assertEquals($id, $event->getId());
+        $this->assertEquals($name, $event->getName());
+        $this->assertEquals($at, $event->getOccurredAt());
+        $this->assertEquals($entityId, $event->getEntityId());
+        $this->assertEquals($expectedPayload, $event->getPayload());
         $this->assertNull($event->getPosition());
     }
 
@@ -84,7 +109,7 @@ final class PersistentEventTest extends TestCase
     {
         return
             new Serializer([
-                new DateTimeNormalizer(),
+                new DateTimeNormalizer([DateTimeNormalizer::FORMAT_KEY => self::DATE_FORMAT]),
                 new UuidNormalizer(),
                 new PropertyNormalizer(),
             ]);
