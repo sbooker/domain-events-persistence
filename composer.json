@@ -15,13 +15,13 @@
     "sbooker/domain-events": "^2.0",
     "sbooker/transaction-manager": "^2.3 || ^3.0",
     "sbooker/persistent-pointer": "^1.0",
-    "symfony/serializer": "^5.0 || ^6.0"
+    "symfony/serializer": "^5.0 || ^6.0 || ^7.0 || ^8.0"
   },
   "require-dev": {
     "gamez/ramsey-uuid-normalizer": "^2.0 || ^3.0",
     "phpunit/phpunit": "^9.0",
-    "symfony/property-access": "^5.0 || ^6.0",
-    "symfony/property-info": "^5.0 || ^6.0",
+    "symfony/property-access": "^5.0 || ^6.0 || ^7.0 || ^8.0",
+    "symfony/property-info": "^5.0 || ^6.0 || ^7.0 || ^8.0",
     "vimeo/psalm": "^4.7"
   },
   "suggest": {
